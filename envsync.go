@@ -9,11 +9,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	separator   = "="
-	splitNumber = 2
-)
-
 // EnvSyncer describes some contracts to synchronize env.
 type EnvSyncer interface {
 	// Sync synchronizes source and target.
