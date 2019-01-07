@@ -39,11 +39,15 @@ func main() {
 		},
 	}
 	app.Action = func(c *cli.Context) error {
-		err := syncer.Sync(source, target)
-		if err == nil {
-			fmt.Println("source and target are successfully synchronized")
-		} else {
+		newEnv, err := syncer.Sync(source, target)
+		if err != nil {
 			fmt.Println(err.Error())
+		}
+		addedLine := len(newEnv)
+		if addedLine > 0 {
+			fmt.Printf("Added %d new env variable\nRun \"tail -n %d %s\" to view them", addedLine, addedLine, target)
+		} else {
+			fmt.Printf("%s already uptodate", source)
 		}
 		return err
 	}

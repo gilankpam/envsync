@@ -1,11 +1,11 @@
 package envsync
 
 import (
-	"bufio"
 	"fmt"
 	"os"
-	"strings"
+	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
 )
 
@@ -42,33 +42,38 @@ type Syncer struct {
 // During the synchronization process, there may be an error.
 // Any key-values that have been synchronized before the error occurred is kept in target.
 // Any key-values that haven't been synchronized because of an error occurred is ignored.
-func (s *Syncer) Sync(source, target string) error {
+func (s *Syncer) Sync(source, target string) (map[string]string, error) {
 	// open the source file
 	sFile, err := os.Open(source)
 	if err != nil {
-		return errors.Wrap(err, "couldn't open source file")
+		return nil, errors.Wrap(err, "couldn't open source file")
 	}
 	defer sFile.Close()
 
 	// open the target file
 	tFile, err := os.OpenFile(target, os.O_APPEND|os.O_RDWR, os.ModeAppend)
 	if err != nil {
-		return errors.Wrap(err, "couldn't open target file")
+		return nil, errors.Wrap(err, "couldn't open target file")
 	}
 	defer tFile.Close()
 
-	sMap, err := s.mapEnv(sFile)
+	sMap, err := godotenv.Parse(sFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	tMap, err := s.mapEnv(tFile)
+	tMap, err := godotenv.Parse(tFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	addedEnv := s.additionalEnv(sMap, tMap)
-	return s.writeEnv(tFile, addedEnv)
+	err = s.writeEnv(tFile, addedEnv)
+	if err != nil {
+		return nil, err
+	}
+
+	return addedEnv, nil
 }
 
 func (s *Syncer) additionalEnv(sMap, tMap map[string]string) map[string]string {
@@ -82,30 +87,11 @@ func (s *Syncer) additionalEnv(sMap, tMap map[string]string) map[string]string {
 }
 
 func (s *Syncer) writeEnv(file *os.File, env map[string]string) error {
-	for k, v := range env {
-		if _, err := file.WriteString(fmt.Sprintf("%s=%s\n", k, v)); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("error when writing key: %s, and value: %s", k, v))
-		}
+	notes := fmt.Sprintf("# Merged by envsyc at %s", time.Now())
+	envContent, err := godotenv.Marshal(env)
+	file.WriteString(fmt.Sprintf("%s\n%s", notes, envContent))
+	if err != nil {
+		return errors.Wrap(err, "Error writing to file")
 	}
 	return nil
-}
-
-func (s *Syncer) mapEnv(file *os.File) (map[string]string, error) {
-	res := make(map[string]string)
-
-	sc := bufio.NewScanner(file)
-	sc.Split(bufio.ScanLines)
-
-	for sc.Scan() {
-		if sc.Text() != "" {
-			sp := strings.SplitN(sc.Text(), separator, splitNumber)
-			if len(sp) != splitNumber {
-				return res, fmt.Errorf("couldn't split %s by '=' into two strings", sc.Text())
-			}
-
-			res[sp[0]] = sp[1]
-		}
-	}
-
-	return res, nil
 }

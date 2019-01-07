@@ -14,14 +14,14 @@ import (
 func TestSyncer_Sync_ErrorOpenSourceFile(t *testing.T) {
 	syncer := &envsync.Syncer{}
 
-	err := syncer.Sync("testdata/env.empty", "env.result")
+	_, err := syncer.Sync("testdata/env.empty", "env.result")
 	assert.NotNil(t, err)
 }
 
 func TestSyncer_Sync_ErrorOpenTargetFile(t *testing.T) {
 	syncer := &envsync.Syncer{}
 
-	err := syncer.Sync("testdata/env.success", "env.empty")
+	_, err := syncer.Sync("testdata/env.success", "env.empty")
 	assert.NotNil(t, err)
 }
 
@@ -32,8 +32,9 @@ func TestSyncer_Sync_Success(t *testing.T) {
 	exec.Command("touch", result).Run()
 	defer exec.Command("rm", "-rf", result).Run()
 
-	err := syncer.Sync("testdata/env.success", result)
+	added, err := syncer.Sync("testdata/env.success", result)
 	assert.Nil(t, err)
+	assert.Equal(t, 3, len(added))
 
 	sMap := fileToMap("testdata/env.success")
 	tMap := fileToMap(result)
@@ -52,7 +53,7 @@ func TestSyncer_Sync_CorruptSourceFormat(t *testing.T) {
 	exec.Command("touch", result).Run()
 	defer exec.Command("rm", "-rf", result).Run()
 
-	err := syncer.Sync("testdata/env.error", result)
+	_, err := syncer.Sync("testdata/env.error", result)
 	assert.NotNil(t, err)
 }
 
@@ -67,7 +68,7 @@ func TestSyncer_Sync_CorruptTargetFormat(t *testing.T) {
 	defer file.Close()
 	file.WriteString("THIS_SHOULD_RAISE_ERROR\n")
 
-	err := syncer.Sync("testdata/env.success", result)
+	_, err := syncer.Sync("testdata/env.success", result)
 	assert.NotNil(t, err)
 }
 
