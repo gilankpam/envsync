@@ -35,6 +35,9 @@ func TestSyncer_Sync_Success(t *testing.T) {
 	added, err := syncer.Sync("testdata/env.success", result)
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(added))
+	assert.Equal(t, "def=ghi!xyz", added["ABC"])
+	assert.Equal(t, "bar", added["FOO"])
+	assert.Equal(t, "localhost", added["HOME"])
 
 	sMap := fileToMap("testdata/env.success")
 	tMap := fileToMap(result)

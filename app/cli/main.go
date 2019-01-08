@@ -45,7 +45,7 @@ func main() {
 		}
 		addedLine := len(newEnv)
 		if addedLine > 0 {
-			fmt.Printf("Added %d new env variable\nRun \"tail -n %d %s\" to view them", addedLine, addedLine, target)
+			fmt.Printf("Added %d new env variables\nRun \"tail -n %d %s\" to view them", addedLine, addedLine, target)
 		} else {
 			fmt.Printf("%s already uptodate", source)
 		}

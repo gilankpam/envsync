@@ -18,7 +18,7 @@ type EnvSyncer interface {
 	//
 	// Any values in source that aren't in target will be written to target.
 	// Any values in source that are in target won't be written to target.
-	Sync(source, target string) error
+	Sync(source, target string) (map[string]string, error)
 }
 
 // Syncer implements EnvSyncer.
@@ -84,7 +84,10 @@ func (s *Syncer) additionalEnv(sMap, tMap map[string]string) map[string]string {
 func (s *Syncer) writeEnv(file *os.File, env map[string]string) error {
 	notes := fmt.Sprintf("# Merged by envsyc at %s", time.Now())
 	envContent, err := godotenv.Marshal(env)
-	file.WriteString(fmt.Sprintf("%s\n%s", notes, envContent))
+	if err != nil {
+		return errors.Wrap(err, "Error parsing data")
+	}
+	_, err = file.WriteString(fmt.Sprintf("%s\n%s", notes, envContent))
 	if err != nil {
 		return errors.Wrap(err, "Error writing to file")
 	}
